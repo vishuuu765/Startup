@@ -1,5 +1,6 @@
 # app.py
 
+
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -73,3 +74,4 @@ fig3, ax3 = plt.subplots()
 sns.lineplot(data=monthly_trend, x="Date", y="Amount in USD", marker="o", ax=ax3)
 plt.xticks(rotation=45)
 st.pyplot(fig3)
+
