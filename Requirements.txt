@@ -1,4 +1,5 @@
-Pandas
-Matplotlib
-NumPy 
-Seaborn
+streamlit
+pandas
+matplotlib
+seaborn
+numpy
