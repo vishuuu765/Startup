@@ -117,7 +117,7 @@ else:
         ax.set_ylabel(None)
         st.pyplot(fig)
 
-    with row1[2]:
+    with row1[0]:
         st.subheader("🏙️ Top Cities by Funding")
         top_cities = filtered_df.groupby("City")["AmountUSD"].sum().nlargest(10)
         fig, ax = plt.subplots(figsize=(6, 4))
@@ -129,7 +129,7 @@ else:
     # ROW 2
     row2 = st.columns(3)
 
-    with row2[0]:
+    with row2[1]:
         st.subheader("📈 Monthly Funding Trend")
         monthly_funding = filtered_df.groupby("Month")["AmountUSD"].sum()
         fig, ax = plt.subplots(figsize=(6, 4))
@@ -139,7 +139,7 @@ else:
         ax.set_xticks(range(1, 13))
         st.pyplot(fig)
 
-    with row2[1]:
+    with row2[0]:
         st.subheader("💰 Funding by Investment Type")
         investment_dist = filtered_df["InvestmentType"].value_counts()
         fig, ax = plt.subplots(figsize=(6, 4))
@@ -148,7 +148,7 @@ else:
         ax.axis('equal')
         st.pyplot(fig)
 
-    with row2[2]:
+    with row2[1]:
         st.subheader("🏭 Top Sub-Industries")
         top_sub_industries = filtered_df.groupby("SubIndustry")["AmountUSD"].sum().nlargest(10)
         fig, ax = plt.subplots(figsize=(6, 4))
@@ -156,3 +156,4 @@ else:
         ax.set_xlabel("Total Funding (USD)")
         ax.set_ylabel(None)
         st.pyplot(fig)
+
