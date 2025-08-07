@@ -20,14 +20,9 @@ def load_data():
 
     # Standardize column names
     df.rename(columns={
-        "Date dd/mm/yyyy": "Date",
-        "City  Location": "City",
-        "Investors Name": "Investors",
-        "Startup Name": "Startup",
-        "Industry Vertical": "Industry",
-        "SubVertical": "SubIndustry",
-        "Amount in USD": "AmountUSD",
-        "InvestmentnType": "InvestmentType"
+        "Date dd/mm/yyyy": "Date", "City  Location": "City", "Investors Name": "Investors",
+        "Startup Name": "Startup", "Industry Vertical": "Industry", "SubVertical": "SubIndustry",
+        "Amount in USD": "AmountUSD", "InvestmentnType": "InvestmentType"
     }, inplace=True)
 
     # Clean 'AmountUSD' column
@@ -46,7 +41,10 @@ def load_data():
     })
 
     # Drop rows with missing essential data
-    df.dropna(subset=["Date", "Startup", "Industry", "SubIndustry", "City", "AmountUSD", "Investors", "InvestmentType"], inplace=True)
+    df.dropna(subset=[
+        "Date", "Startup", "Industry", "SubIndustry", "City", 
+        "AmountUSD", "Investors", "InvestmentType"
+    ], inplace=True)
 
     # Feature Engineering
     df["Year"] = df["Date"].dt.year.astype(int)
@@ -98,62 +96,87 @@ else:
     col3.metric("Average Deal Size", f"${avg_ticket_size/1e6:.2f}M")
     st.markdown("---")
 
-    # --- VISUALIZATION GRIDS ---
-    st.header("📊 Top Rankings")
-    row1_col1, row1_col2 = st.columns(2)
+    # --- VISUALIZATION 2x3 GRID ---
+    st.header("📊 Visual Insights")
     
+    # --- ROW 1 ---
+    row1_col1, row1_col2, row1_col3 = st.columns(3)
+
     # CHART 1: Top Startups
     with row1_col1:
-        st.subheader("🏆 Top 10 Startups")
+        st.subheader("🏆 Top Startups")
         top_startups = filtered_df.groupby("Startup")["AmountUSD"].sum().nlargest(10)
-        fig1, ax1 = plt.subplots()
-        sns.barplot(y=top_startups.index, x=top_startups.values, palette="viridis", ax=ax1)
-        ax1.set_xlabel("Total Funding (USD)")
-        ax1.set_ylabel(None)
-        st.pyplot(fig1)
+        fig, ax = plt.subplots(figsize=(8, 6))
+        sns.barplot(y=top_startups.index, x=top_startups.values, palette="viridis", ax=ax)
+        ax.set_xlabel("Total Funding (USD)", fontsize=10)
+        ax.set_ylabel(None)
+        ax.tick_params(axis='x', labelsize=8)
+        ax.tick_params(axis='y', labelsize=8)
+        st.pyplot(fig)
 
     # CHART 2: Top Investors
     with row1_col2:
-        st.subheader("🤝 Top 10 Investors")
+        st.subheader("🤝 Top Investors")
         investor_df = filtered_df.copy()
         investor_df["Investors"] = investor_df["Investors"].str.split(', ')
         investor_df = investor_df.explode("Investors")
         investor_df = investor_df[~investor_df["Investors"].isin(["Undisclosed Investors", ""])]
         top_investors = investor_df.groupby("Investors")["AmountUSD"].sum().nlargest(10)
-        fig2, ax2 = plt.subplots()
-        sns.barplot(y=top_investors.index, x=top_investors.values, palette="plasma", ax=ax2)
-        ax2.set_xlabel("Total Amount Invested (USD)")
-        ax2.set_ylabel(None)
-        st.pyplot(fig2)
+        fig, ax = plt.subplots(figsize=(8, 6))
+        sns.barplot(y=top_investors.index, x=top_investors.values, palette="plasma", ax=ax)
+        ax.set_xlabel("Total Amount Invested (USD)", fontsize=10)
+        ax.set_ylabel(None)
+        ax.tick_params(axis='x', labelsize=8)
+        ax.tick_params(axis='y', labelsize=8)
+        st.pyplot(fig)
 
-    st.header("📊 Deeper Insights")
-    row2_col1, row2_col2 = st.columns(2)
+    # CHART 3: Top Cities
+    with row1_col3:
+        st.subheader("🏙️ Top Cities by Funding")
+        top_cities = filtered_df.groupby("City")["AmountUSD"].sum().nlargest(10)
+        fig, ax = plt.subplots(figsize=(8, 6))
+        sns.barplot(y=top_cities.index, x=top_cities.values, palette="coolwarm", ax=ax)
+        ax.set_xlabel("Total Funding (USD)", fontsize=10)
+        ax.set_ylabel(None)
+        ax.tick_params(axis='x', labelsize=8)
+        ax.tick_params(axis='y', labelsize=8)
+        st.pyplot(fig)
 
-    # CHART 3: Top Sub-Industries
+    # --- ROW 2 ---
+    row2_col1, row2_col2, row2_col3 = st.columns(3)
+
+    # CHART 4: Monthly Funding Trend
     with row2_col1:
-        st.subheader("🏭 Top 10 Sub-Industries")
-        top_sub_industries = filtered_df.groupby("SubIndustry")["AmountUSD"].sum().nlargest(10)
-        fig3, ax3 = plt.subplots()
-        sns.barplot(y=top_sub_industries.index, x=top_sub_industries.values, palette="coolwarm", ax=ax3)
-        ax3.set_xlabel("Total Funding (USD)")
-        ax3.set_ylabel(None)
-        st.pyplot(fig3)
-
-    # CHART 4: Funding Amount Distribution
+        st.subheader("📈 Monthly Funding Trend")
+        monthly_funding = filtered_df.groupby("Month")["AmountUSD"].sum()
+        fig, ax = plt.subplots(figsize=(8, 6))
+        sns.lineplot(x=monthly_funding.index, y=monthly_funding.values, marker='o', ax=ax, color='purple')
+        ax.set_xlabel("Month of the Year", fontsize=10)
+        ax.set_ylabel("Total Funding (USD)", fontsize=10)
+        ax.set_xticks(range(1, 13))
+        ax.tick_params(axis='x', labelsize=8, rotation=45)
+        ax.tick_params(axis='y', labelsize=8)
+        st.pyplot(fig)
+        
+    # CHART 5: Investment Type Distribution
     with row2_col2:
-        st.subheader("Histogram of Funding Amounts")
-        fig4, ax4 = plt.subplots()
-        sns.histplot(filtered_df["AmountUSD"], bins=30, kde=True, log_scale=True, ax=ax4, color="green")
-        ax4.set_xlabel("Funding Amount (USD) - Log Scale")
-        ax4.set_ylabel("Number of Deals")
-        st.pyplot(fig4)
+        st.subheader("💰 Funding by Investment Type")
+        investment_dist = filtered_df["InvestmentType"].value_counts()
+        fig, ax = plt.subplots(figsize=(8, 6))
+        ax.pie(investment_dist.values, labels=investment_dist.index, autopct='%1.1f%%', 
+               startangle=90, colors=sns.color_palette("Set2"),
+               textprops={'fontsize': 8})
+        ax.axis('equal')
+        st.pyplot(fig)
 
-    # --- FULL-WIDTH HEATMAP ---
-    st.header("📅 Year vs. Month Funding Heatmap")
-    st.write("This heatmap shows the total funding amount across all years and is independent of the filters above.")
-    
-    heatmap_data = df.pivot_table(index="Month", columns="Year", values="AmountUSD", aggfunc='sum')
-    fig5, ax5 = plt.subplots(figsize=(12, 8))
-    sns.heatmap(heatmap_data, annot=True, fmt=".0f", cmap="YlGnBu", ax=ax5, cbar_kws={'label': 'Funding Amount (USD)'})
-    ax5.set_title("Total Funding Amount per Month and Year")
-    st.pyplot(fig5)
+    # CHART 6: Top Sub-Industries
+    with row2_col3:
+        st.subheader("🏭 Top Sub-Industries")
+        top_sub_industries = filtered_df.groupby("SubIndustry")["AmountUSD"].sum().nlargest(10)
+        fig, ax = plt.subplots(figsize=(8, 6))
+        sns.barplot(y=top_sub_industries.index, x=top_sub_industries.values, palette="rocket", ax=ax)
+        ax.set_xlabel("Total Funding (USD)", fontsize=10)
+        ax.set_ylabel(None)
+        ax.tick_params(axis='x', labelsize=8)
+        ax.tick_params(axis='y', labelsize=8)
+        st.pyplot(fig)
