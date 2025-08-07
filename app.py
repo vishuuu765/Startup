@@ -16,7 +16,7 @@ df = pd.read_csv("Startup.csv")  # Replace with your CSV file name
 # Data Cleaning
 df["Amount in USD"] = pd.to_numeric(df["Amount in USD"], errors="coerce")
 
-df = df.dropna(subset=["Amount in USD", "City Location", "Startup Name"])
+df = df.dropna(subset=["Amount in USD", "City Location"])
 
 # Sidebar Filters
 st.sidebar.header("Filter Options")
@@ -74,6 +74,7 @@ fig3, ax3 = plt.subplots()
 sns.lineplot(data=monthly_trend, x="Date", y="Amount in USD", marker="o", ax=ax3)
 plt.xticks(rotation=45)
 st.pyplot(fig3)
+
 
 
 
