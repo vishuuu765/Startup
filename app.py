@@ -8,7 +8,7 @@ st.set_page_config(page_title="Startup Funding Dashboard", layout="wide")
 st.title("🚀 Indian Startup Funding Analysis")
 
 # Load dataset
-df = pd.read_csv("cleaned_startup.csv")  # Ensure this file is in your working directory
+df = pd.read_csv("startup.csv")  # Ensure this file is in your working directory
 
 # Data Cleaning
 df["Amount in USD"] = pd.to_numeric(df["Amount in USD"], errors="coerce")
@@ -94,3 +94,4 @@ with col6:
     fig6, ax6 = plt.subplots()
     sns.barplot(data=city_funding, x="Amount in USD", y="City Location", ax=ax6)
     st.pyplot(fig6)
+
