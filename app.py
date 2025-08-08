@@ -10,7 +10,7 @@ st.set_page_config(page_title="Startup Funding Dashboard", layout="wide")
 st.title("🚀 Indian Startup Funding Analysis")
 
 # Load dataset
-df = pd.read_csv("startup_cleaned.csv")  # Your cleaned CSV
+df = pd.read_csv("startup.csv")  # Your cleaned CSV
 
 # Data Cleaning
 df["Amount in USD"] = pd.to_numeric(df["Amount in USD"], errors="coerce")
@@ -104,3 +104,4 @@ with col2:
     fig4, ax4 = plt.subplots()
     sns.barplot(data=industry_funding, x="Amount in USD", y="Industry Vertical", palette="coolwarm", ax=ax4)
     st.pyplot(fig4)
+
