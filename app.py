@@ -5,118 +5,127 @@ import seaborn as sns
 
 # --- App Config ---
 st.set_page_config(page_title="🚀 Startup Funding Dashboard", layout="wide")
-st.title("🚀 Startup Funding Analysis")
+st.title("🚀 Indian Startup Funding Analysis")
 
 # --- Load Dataset ---
-df = pd.read_csv("Startup.csv")
+df = pd.read_csv("startup.csv")
 
-# --- Data Cleaning ---
+# --- Clean & Enrich ---
 df["Amount in USD"] = pd.to_numeric(df["Amount in USD"], errors="coerce")
 df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
-df.dropna(subset=["Amount in USD", "City Location", "Startup Name", "Investors Name", "Industry Vertical"], inplace=True)
+df.dropna(subset=["Amount in USD", "City Location", "Startup Name", "Investors Name", "Industry Vertical", "Date"], inplace=True)
 df["Year"] = df["Date"].dt.year
 df["Month"] = df["Date"].dt.month
 
 # --- Sidebar Filters ---
 st.sidebar.header("📍 Filter Options")
 
-selected_cities = st.sidebar.multiselect("Select City(s)", options=sorted(df["City Location"].unique()), default=[])
-selected_years = st.sidebar.multiselect("Select Year(s)", options=sorted(df["Year"].unique()), default=[])
-selected_industries = st.sidebar.multiselect("Select Industry(s)", options=sorted(df["Industry Vertical"].unique()), default=[])
+city_list = sorted(df["City Location"].dropna().unique())
+industry_list = sorted(df["Industry Vertical"].dropna().unique())
+year_list = sorted(df["Year"].dropna().unique())
 
-min_amt = int(df["Amount in USD"].min())
-max_amt = int(df["Amount in USD"].max())
-amount_range = st.sidebar.slider("Funding Amount Range (USD)", min_amt, max_amt, (min_amt, max_amt))
+selected_cities = st.sidebar.multiselect("Select City(s)", city_list, default=city_list[:3])
+selected_industries = st.sidebar.multiselect("Select Industry(s)", industry_list, default=industry_list[:3])
+selected_years = st.sidebar.slider("Select Year Range", min_value=int(min(year_list)), max_value=int(max(year_list)), value=(int(min(year_list)), int(max(year_list))))
+
+amount_min = int(df["Amount in USD"].min())
+amount_max = int(df["Amount in USD"].max())
+amount_range = st.sidebar.slider("Funding Amount Range (USD)", min_value=amount_min, max_value=amount_max, value=(amount_min, amount_max))
+
+show_top_10 = st.sidebar.checkbox("Show only Top 10 in charts", value=True)
 
 # --- Apply Filters ---
 filtered_df = df.copy()
-if selected_cities:
-    filtered_df = filtered_df[filtered_df["City Location"].isin(selected_cities)]
-if selected_years:
-    filtered_df = filtered_df[filtered_df["Year"].isin(selected_years)]
-if selected_industries:
-    filtered_df = filtered_df[filtered_df["Industry Vertical"].isin(selected_industries)]
+filtered_df = filtered_df[
+    (filtered_df["City Location"].isin(selected_cities)) &
+    (filtered_df["Industry Vertical"].isin(selected_industries)) &
+    (filtered_df["Year"].between(selected_years[0], selected_years[1])) &
+    (filtered_df["Amount in USD"].between(amount_range[0], amount_range[1]))
+]
 
-filtered_df = filtered_df[filtered_df["Amount in USD"].between(amount_range[0], amount_range[1])]
+# --- Chart Function ---
+def render_bar_chart(data, x, y, title):
+    fig, ax = plt.subplots(figsize=(6, 4))
+    sns.barplot(data=data, x=x, y=y, ax=ax)
+    ax.set_title(title)
+    ax.tick_params(axis='x', rotation=45)
+    st.pyplot(fig)
+
+def render_line_chart(data, x, y, title):
+    fig, ax = plt.subplots(figsize=(6, 4))
+    sns.lineplot(data=data, x=x, y=y, marker="o", ax=ax)
+    ax.set_title(title)
+    ax.tick_params(axis='x', rotation=45)
+    st.pyplot(fig)
 
 # --- Data Preview ---
-st.subheader("📊 Filtered Data Preview")
+st.subheader("📊 Filtered Dataset Preview")
 st.dataframe(filtered_df.head(50), use_container_width=True)
 
-# --- Layout: 3 Rows, 2 Columns each ---
+if filtered_df.empty:
+    st.warning("⚠️ No data available for the selected filters.")
+else:
+    # --- Row 1 ---
+    col1, col2 = st.columns(2)
+    with col1:
+        st.subheader("🏆 Top Funded Startups")
+        top_startups = filtered_df.groupby("Startup Name")["Amount in USD"].sum().sort_values(ascending=False)
+        if show_top_10:
+            top_startups = top_startups.head(10)
+        render_bar_chart(top_startups.reset_index(), "Amount in USD", "Startup Name", "Top Funded Startups")
 
-# Row 1
-col1, col2 = st.columns(2)
-with col1:
-    st.subheader("🏆 Top 10 Funded Startups")
-    top_startups = filtered_df.groupby("Startup Name")["Amount in USD"].sum().nlargest(10).reset_index()
-    if not top_startups.empty:
-        fig, ax = plt.subplots()
-        sns.barplot(data=top_startups, x="Amount in USD", y="Startup Name", ax=ax)
-        ax.set_title("Top Funded Startups")
-        st.pyplot(fig)
-    else:
-        st.warning("No data available.")
+    with col2:
+        st.subheader("💰 Top Investors")
+        top_investors = filtered_df.groupby("Investors Name")["Amount in USD"].sum().sort_values(ascending=False)
+        if show_top_10:
+            top_investors = top_investors.head(10)
+        render_bar_chart(top_investors.reset_index(), "Amount in USD", "Investors Name", "Top Investors")
 
-with col2:
-    st.subheader("💰 Top 10 Investors")
-    top_investors = filtered_df.groupby("Investors Name")["Amount in USD"].sum().nlargest(10).reset_index()
-    if not top_investors.empty:
-        fig, ax = plt.subplots()
-        sns.barplot(data=top_investors, x="Amount in USD", y="Investors Name", ax=ax)
-        ax.set_title("Top Investors")
-        st.pyplot(fig)
-    else:
-        st.warning("No data available.")
-
-# Row 2
-col3, col4 = st.columns(2)
-with col3:
-    st.subheader("📈 Monthly Funding Trend")
-    if not filtered_df.empty:
+    # --- Row 2 ---
+    col3, col4 = st.columns(2)
+    with col3:
+        st.subheader("📈 Monthly Funding Trend")
         monthly = filtered_df.groupby(filtered_df["Date"].dt.to_period("M"))["Amount in USD"].sum().reset_index()
         monthly["Date"] = monthly["Date"].astype(str)
-        fig, ax = plt.subplots()
-        sns.lineplot(data=monthly, x="Date", y="Amount in USD", marker="o", ax=ax)
-        ax.set_xticklabels(monthly["Date"], rotation=45)
-        ax.set_title("Monthly Trend")
-        st.pyplot(fig)
-    else:
-        st.info("No data available.")
+        render_line_chart(monthly, "Date", "Amount in USD", "Monthly Funding Trend")
 
-with col4:
-    st.subheader("🏭 Funding by Industry")
-    top_industry = filtered_df.groupby("Industry Vertical")["Amount in USD"].sum().nlargest(10).reset_index()
-    if not top_industry.empty:
-        fig, ax = plt.subplots()
-        sns.barplot(data=top_industry, x="Amount in USD", y="Industry Vertical", ax=ax)
-        ax.set_title("Top Industries by Funding")
-        st.pyplot(fig)
-    else:
-        st.info("No data available.")
+    with col4:
+        st.subheader("🏭 Industry Funding")
+        top_industry = filtered_df.groupby("Industry Vertical")["Amount in USD"].sum().sort_values(ascending=False)
+        if show_top_10:
+            top_industry = top_industry.head(10)
+        render_bar_chart(top_industry.reset_index(), "Amount in USD", "Industry Vertical", "Funding by Industry")
 
-# Row 3
-col5, col6 = st.columns(2)
-with col5:
-    st.subheader("📊 Funding Count by Industry")
-    industry_count = filtered_df["Industry Vertical"].value_counts().head(10).reset_index()
-    industry_count.columns = ["Industry Vertical", "Count"]
-    if not industry_count.empty:
-        fig, ax = plt.subplots()
-        sns.barplot(data=industry_count, x="Count", y="Industry Vertical", ax=ax)
-        ax.set_title("Funding Count")
-        st.pyplot(fig)
-    else:
-        st.info("No data available.")
+    # --- Row 3 ---
+    col5, col6 = st.columns(2)
+    with col5:
+        st.subheader("🔢 Funding Count by Industry")
+        industry_count = filtered_df["Industry Vertical"].value_counts()
+        if show_top_10:
+            industry_count = industry_count.head(10)
+        render_bar_chart(industry_count.reset_index(), "count", "Industry Vertical", "Industry Count")
+        
+    with col6:
+        st.subheader("🌆 Funding by City")
+        city_funding = filtered_df.groupby("City Location")["Amount in USD"].sum().sort_values(ascending=False)
+        if show_top_10:
+            city_funding = city_funding.head(10)
+        render_bar_chart(city_funding.reset_index(), "Amount in USD", "City Location", "City-wise Funding")
 
-with col6:
-    st.subheader("🗺️ Funding by City")
-    top_cities = filtered_df.groupby("City Location")["Amount in USD"].sum().nlargest(10).reset_index()
-    if not top_cities.empty:
-        fig, ax = plt.subplots()
-        sns.barplot(data=top_cities, x="Amount in USD", y="City Location", ax=ax)
-        ax.set_title("Top Funded Cities")
+    # --- Row 4 (Extra Insightful Chart) ---
+    col7, col8 = st.columns(2)
+    with col7:
+        st.subheader("📅 Yearly Trend by Sector")
+        yearly_sector = filtered_df.groupby(["Year", "Industry Vertical"])["Amount in USD"].sum().reset_index()
+        pivot = yearly_sector.pivot(index="Year", columns="Industry Vertical", values="Amount in USD").fillna(0)
+        fig, ax = plt.subplots(figsize=(6, 4))
+        pivot.plot(ax=ax)
+        ax.set_title("Yearly Trend by Sector")
         st.pyplot(fig)
-    else:
-        st.info("No data available.")
 
+    with col8:
+        st.subheader("🌍 Startup Count per City")
+        city_count = filtered_df["City Location"].value_counts()
+        if show_top_10:
+            city_count = city_count.head(10)
+        render_bar_chart(city_count.reset_index(), "count", "City Location", "Startups per City")
