@@ -5,10 +5,10 @@ import seaborn as sns
 
 # --- App Config ---
 st.set_page_config(page_title="🚀 Startup Funding Dashboard", layout="wide")
-st.title("🚀 Indian Startup Funding Analysis")
+st.title("🚀 Startup Funding Analysis")
 
 # --- Load Dataset ---
-df = pd.read_csv("startup.csv")
+df = pd.read_csv("Startup.csv")
 
 # --- Data Cleaning ---
 df["Amount in USD"] = pd.to_numeric(df["Amount in USD"], errors="coerce")
@@ -119,3 +119,4 @@ with col6:
         st.pyplot(fig)
     else:
         st.info("No data available.")
+
